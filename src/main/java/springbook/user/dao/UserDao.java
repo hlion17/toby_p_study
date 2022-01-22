@@ -2,11 +2,17 @@ package springbook.user.dao;
 
 import com.mysql.cj.x.protobuf.MysqlxPrepare;
 import org.springframework.boot.autoconfigure.batch.BatchProperties;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.RowMapper;
 import springbook.user.domain.User;
 
 import javax.sql.DataSource;
 import java.sql.*;
+import java.util.List;
 
 public class UserDao {
 
@@ -29,12 +35,14 @@ public class UserDao {
 
     // 수정자를 통한 DI, DataSource 인터페이스 사용
     private DataSource dataSource;
-    private JdbcContext jdbcContext;
+//    private JdbcContext jdbcContext;
+    private JdbcTemplate jdbcTemplate;
 
     // 수정자를 통해 jdbcContext 에 사용할 dataSource 의존성 주입 받음
     public void setDataSource(DataSource dataSource) {
-        this.jdbcContext = new JdbcContext();  // 의존성 주입 받을 때 객체를 생성하고
-        this.jdbcContext.setDataSource(dataSource);  // 의존성 주입
+//        this.jdbcContext = new JdbcContext();  // 의존성 주입 받을 때 객체를 생성하고
+//        this.jdbcContext.setDataSource(dataSource);  // 의존성 주입
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
 
         this.dataSource = dataSource;  // 아직 jdbcContext 적용하지 않는 메서드 떄문에 남겨둠
 
@@ -59,53 +67,85 @@ public class UserDao {
 
     // DB 접근 메서드
     public void add(final User user) throws ClassNotFoundException, SQLException {
-        this.jdbcContext.workWithStatementStrategy(
-                new StatementStrategy() {
-                    @Override
-                    public PreparedStatement makePreparedStatement(Connection c) throws SQLException {
-                        PreparedStatement ps = c.prepareStatement(
-                                "insert into users(id, name, password) values(?,?,?)");
-                        ps.setString(1, user.getId());
-                        ps.setString(2, user.getName());
-                        ps.setString(3, user.getPassword());
-                        return ps;
-                    }
-                }
-        );
+        // JdbcContext 사용
+//        this.jdbcContext.workWithStatementStrategy(
+//                new StatementStrategy() {
+//                    @Override
+//                    public PreparedStatement makePreparedStatement(Connection c) throws SQLException {
+//                        PreparedStatement ps = c.prepareStatement(
+//                                "insert into users(id, name, password) values(?,?,?)");
+//                        ps.setString(1, user.getId());
+//                        ps.setString(2, user.getName());
+//                        ps.setString(3, user.getPassword());
+//                        return ps;
+//                    }
+//                }
+//        );
+
+        // JdbcTemplate 사용
+        this.jdbcTemplate.update("insert into users(id, name, password) values (?, ?, ?)",
+                user.getId(), user.getName(), user.getPassword());
     }
 
     public User get(String id) throws ClassNotFoundException, SQLException {
+//
+//        Connection c = dataSource.getConnection();
+//
+//        PreparedStatement ps = c.prepareStatement(
+//                "select * from users where id = ?");
+//        ps.setString(1, id);
+//
+//        ResultSet rs = ps.executeQuery();
+//
+//        User user = null;
+//        if (rs.next()) {
+//            user = new User();
+//            user.setId(rs.getString("id"));
+//            user.setName(rs.getString("name"));
+//            user.setPassword(rs.getString("password"));
+//        }
+//
+//        rs.close();
+//        ps.close();
+//        c.close();
+//
+//        // 조회 데이터가 없으면 EmptyResultDataAccessException 예외를 발생시킴
+//        if (user == null) throw new EmptyResultDataAccessException(1);
+//
+//        return user;
 
-        Connection c = dataSource.getConnection();
-
-        PreparedStatement ps = c.prepareStatement(
-                "select * from users where id = ?");
-        ps.setString(1, id);
-
-        ResultSet rs = ps.executeQuery();
-
-        // 조회 데이터가 없으면 EmptyResultDataAccessException 예외를 발생시킴
-        User user = null;
-        if (rs.next()) {
-            user = new User();
-            user.setId(rs.getString("id"));
-            user.setName(rs.getString("name"));
-            user.setPassword(rs.getString("password"));
-        }
-
-        rs.close();
-        ps.close();
-        c.close();
-
-        if (user == null) throw new EmptyResultDataAccessException(1);
-
-        return user;
+        return this.jdbcTemplate.queryForObject("select * from users where id = ?"
+                , new Object[] {id}  // SQL에 바인딩할 파라미터 값. 가변인자 대신 배열을 사용
+                ,new RowMapper<User>() {  // ResultSet 한 로우의 결과를 오브젝트에 매핑해주는 콜백(RowMapper)
+            @Override
+            public User mapRow(ResultSet rs, int rowNum) throws SQLException {
+                User user = new User();
+                user.setId(rs.getString("id"));
+                user.setName(rs.getString("name"));
+                user.setPassword(rs.getString("password"));
+                return user;
+            }
+        });
     }
 
     // 전략패턴
     // 사용하는 Client 가 됨
     public void deleteAll() throws SQLException {
-        this.jdbcContext.executeSql("delete from users");
+        // JdbcContext 사용
+//        this.jdbcContext.executeSql("delete from users");
+
+        // JdbcTemplate 사용
+//        this.jdbcTemplate.update(
+//                new PreparedStatementCreator() {
+//                    @Override
+//                    public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
+//                        return con.prepareStatement("delete from users");
+//                    }
+//                }
+//        );
+
+        // JdbcTemplate 사용
+        this.jdbcTemplate.update("delete from users");
     }
 
 
@@ -147,38 +187,69 @@ public class UserDao {
 
 
     public int getCount() throws SQLException {
-        Connection c = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
+//        Connection c = null;
+//        PreparedStatement ps = null;
+//        ResultSet rs = null;
+//
+//        try {
+//            c = dataSource.getConnection();
+//
+//            ps = c.prepareStatement("SELECT count(*) FROM users; ");
+//
+//            rs = ps.executeQuery();
+//            rs.next();
+//            return rs.getInt(1);
+//        } catch (SQLException e) {
+//            throw e;
+//        } finally {
+//            try {
+//                if (rs != null) rs.close();
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//            }
+//            try {
+//                if (ps != null) ps.close();
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//            }
+//            try {
+//                if (c != null) c.close();
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//            }
+//        }
 
-        try {
-            c = dataSource.getConnection();
+        // JdbcTemplate 콜백 함수 이용
+//        return this.jdbcTemplate.query(new PreparedStatementCreator() {
+//                                           @Override
+//                                           public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
+//                                               return con.prepareStatement("select count(*) from users");
+//                                           }
+//                                       }
+//                , new ResultSetExtractor<Integer>() {
+//                    @Override
+//                    public Integer extractData(ResultSet rs) throws SQLException, DataAccessException {
+//                        rs.next();
+//                        return rs.getInt(1);
+//                    }
+//                });
 
-            ps = c.prepareStatement("SELECT count(*) FROM users; ");
+        // JdbcTemplate queryForInt 메서드 사용
+        return this.jdbcTemplate.queryForInt("select count(*) from users");
 
-            rs = ps.executeQuery();
-            rs.next();
-            return rs.getInt(1);
-        } catch (SQLException e) {
-            throw e;
-        } finally {
-            try {
-                if (rs != null) rs.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (ps != null) ps.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            try {
-                if (c != null) c.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
+    }
 
-
+    public List<User> getAll() {
+        return this.jdbcTemplate.query("select * from users order by id",
+                new RowMapper<User>() {
+                    @Override
+                    public User mapRow(ResultSet rs, int rowNum) throws SQLException {
+                        User user = new User();
+                        user.setId(rs.getString("id"));
+                        user.setName(rs.getString("name"));
+                        user.setPassword(rs.getString("password"));
+                        return user;
+                    }
+                });
     }
 }

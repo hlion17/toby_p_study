@@ -12,11 +12,14 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import springbook.user.domain.User;
 import java.sql.SQLException;
+import java.util.List;
+
 import org.junit.runner.JUnitCore;
 
 import javax.sql.DataSource;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -91,7 +94,7 @@ public class UserDaoTest {
         dao.add(user3);
 //        assertThat(dao.getCount(), is(3));
 
-        Assert.assertEquals(dao.getCount(), 3);
+        assertEquals(dao.getCount(), 3);
 
     }
 
@@ -99,9 +102,40 @@ public class UserDaoTest {
     public void getUserFailure() throws SQLException, ClassNotFoundException {
         dao.deleteAll();
 //        assertThat(dao.getCount(), is(0));
-        Assert.assertEquals(dao.getCount(), 0);
+        assertEquals(dao.getCount(), 0);
 
         dao.get("Unknown");
+    }
+
+    @Test
+    public void getAll() throws SQLException, ClassNotFoundException {
+        dao.deleteAll();
+
+        dao.add(user1);
+        List<User> users1 = dao.getAll();
+        assertThat(users1.size(), is(1));
+        checkSameUser(user1, users1.get(0));
+
+        dao.add(user2);
+        List<User> users2 = dao.getAll();
+        assertThat(users2.size(), is(2));
+        checkSameUser(user1, users2.get(0));
+        checkSameUser(user2, users2.get(1));
+
+        dao.add(user3);
+        List<User> users3 = dao.getAll();
+        assertThat(users3.size(), is(3));
+        // getAll()의 정렬결과에 따라서 비교 순서를 다르게 해줘야 될 수 도 있음
+        checkSameUser(user1, users3.get(0));
+        checkSameUser(user2, users3.get(1));
+        checkSameUser(user3, users3.get(2));
+
+    }
+
+    private void checkSameUser(User user1, User user2) {
+        assertThat(user1.getId(), is(user2.getId()));
+        assertEquals(user1.getName(), user2.getName());
+        assertEquals(user1.getPassword(), user2.getPassword());
     }
 }
 
