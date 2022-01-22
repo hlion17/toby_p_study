@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+<!--    수정자를 통한 의존성 주입-->
+<!--    생성자를 통한 의존성 주입도 적용되는지 테스트 해보기-->
+
+<!--    <bean id="connectionMaker" class="springbook.user.dao.DConnectionMaker"/>-->
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+        <property name="driverClass" value="org.h2.Driver"/>
+        <property name="url" value="jdbc:h2:tcp://localhost:9092/~/toby"/>
+        <property name="username" value="hlion17"/>
+        <property name="password" value="1234"/>
+
+    </bean>
+    <bean id="userDao" class="springbook.user.dao.UserDao">
+<!--        <property name="connectionMaker" ref="connectionMaker"/>-->
+        <property name="dataSource" ref="dataSource"/>
+
+    </bean>
+</beans>
