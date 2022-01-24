@@ -3,6 +3,7 @@ package springbook.user.dao;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import springbook.user.domain.User;
+import springbook.user.exception.DuplicateUseridException;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -27,7 +28,7 @@ public class UserDao {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
-    public void add(final User user) throws ClassNotFoundException, SQLException {
+    public void add(final User user) throws DuplicateUseridException {
         this.jdbcTemplate.update("insert into users(id, name, password) values (?, ?, ?)",
                 user.getId(), user.getName(), user.getPassword());
     }
@@ -43,7 +44,7 @@ public class UserDao {
                 userMapper);
     }
 
-    public void deleteAll() throws SQLException {
+    public void deleteAll() {
         this.jdbcTemplate.update("delete from users");
     }
 
