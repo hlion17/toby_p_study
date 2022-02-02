@@ -11,13 +11,13 @@ public class DaoFactory {
 
 //    // 생성자를 통한 DI
 //    @Bean
-//    public UserDao userDao() {
-//        return new UserDao(connectionMaker());
+//    public UserDaoJdbc userDao() {
+//        return new UserDaoJdbc(connectionMaker());
 //    }
      //수정자를 통한 DI
     @Bean
-    public UserDao userDao() {
-        UserDao dao = new UserDao();
+    public UserDaoJdbc userDao() {
+        UserDaoJdbc dao = new UserDaoJdbc();
 //        dao.setConnectionMaker(connectionMaker());
         dao.setDataSource(dataSource());
         return dao;

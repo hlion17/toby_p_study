@@ -1,13 +1,15 @@
 package springbook.user.dao;
 
-import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.datasource.SingleConnectionDataSource;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator;
+import org.springframework.jdbc.support.SQLExceptionTranslator;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import springbook.user.domain.User;
@@ -25,7 +27,7 @@ import static org.junit.Assert.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations= "/test_applicationContext.xml")
 //@DirtiesContext
-public class UserDaoTest {
+public class UserDaoJdbcTest {
 
 //    @Autowired
 //    ApplicationContext context;
@@ -33,17 +35,19 @@ public class UserDaoTest {
     // 픽스처(fixture)
     @Autowired
     private UserDao dao;
+    @Autowired
+    DataSource datasource;
     private User user1;
     private User user2;
     private User user3;
 
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
-        JUnitCore.main("springbook.user.dao.UserDaoTest");
+        JUnitCore.main("springbook.user.dao.UserDaoJdbcTest");
     }
 
     @Before
     public void setUp() {
-//        this.dao = context.getBean("userDao", UserDao.class);
+//        this.dao = context.getBean("userDao", UserDaoJdbc.class);
         this.user1 = new User("test1", "김자바", "12341");
         this.user2 = new User("test2", "이자바", "12342");
         this.user3 = new User("test3", "박자바", "12343");
@@ -55,7 +59,7 @@ public class UserDaoTest {
 //        dao.setDataSource(dataSource);
 
 //        // 테스트에서 의존성 직접 주입
-//        dao = new UserDao();
+//        dao = new UserDaoJdbc();
 //        DataSource dataSource = new SingleConnectionDataSource("jdbc:h2:tcp://localhost:9092/~/toby", "hlion17", "1234", true);
 //        dao.setDataSource(dataSource);
     }
@@ -135,7 +139,38 @@ public class UserDaoTest {
 
     }
 
+    // spring-jdbc 와 spring 버전차이로 인해 다른 에러가 남
+//    @Test(expected = DataAccessException.class)
+    @Test(expected = NoClassDefFoundError.class)
+    @Ignore
+    public void duplicateKey() {
+        dao.deleteAll();
+
+        dao.add(user1);
+        dao.add(user1);
+    }
+
+    // 위와 같은 이유로 안됨
+    // 스프링 예외 전환 api를 이용
+    @Test
+    @Ignore
+    public void sqlExceptionTranslate() {
+        dao.deleteAll();
+
+        try {
+            dao.add(user1);
+            dao.add(user1);
+        } catch (DuplicateKeyException ex) {
+            SQLException sqlEx = (SQLException) ex.getRootCause();
+            SQLExceptionTranslator set =
+                    new SQLErrorCodeSQLExceptionTranslator(this.datasource);
+
+            assertEquals(set.translate(null, null, sqlEx), is(DuplicateKeyException.class));
+        }
+    }
+
     private void checkSameUser(User user1, User user2) {
+
         assertThat(user1.getId(), is(user2.getId()));
         assertEquals(user1.getName(), user2.getName());
         assertEquals(user1.getPassword(), user2.getPassword());
@@ -154,10 +189,10 @@ public class UserDaoTest {
 //        // XML 기반의 설정파일
 //        ApplicationContext context = new GenericXmlApplicationContext("applicationContext.xml");
 //
-//        // Application context 에서 userDao 라는 이름의 빈을 찾아 반환(클래스 타입은 UserDao 로 검색)
-//        UserDao dao = context.getBean("userDao", UserDao.class);
+//        // Application context 에서 userDao 라는 이름의 빈을 찾아 반환(클래스 타입은 UserDaoJdbc 로 검색)
+//        UserDaoJdbc dao = context.getBean("userDao", UserDaoJdbc.class);
 //
-////        UserDao dao = new DaoFactory().userDao();
+////        UserDaoJdbc dao = new DaoFactory().userDao();
 //
 //        User user = new User();
 //

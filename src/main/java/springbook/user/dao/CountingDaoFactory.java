@@ -8,13 +8,13 @@ public class CountingDaoFactory {
 
     // 생성자 DI 주입방식
 //    @Bean
-//    public UserDao userDao() {
-//        return new UserDao(connectionMaker());
+//    public UserDaoJdbc userDao() {
+//        return new UserDaoJdbc(connectionMaker());
 //    }
 
     @Bean
-    public UserDao userDao() {
-        UserDao dao = new UserDao();
+    public UserDaoJdbc userDao() {
+        UserDaoJdbc dao = new UserDaoJdbc();
 //        dao.setConnectionMaker(connectionMaker());
         return dao;
     }

@@ -8,7 +8,7 @@ import java.sql.SQLException;
 public class UserDaoConnectionCountingTest {
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(CountingDaoFactory.class);
-        UserDao dao = context.getBean("userDao", UserDao.class);
+        UserDaoJdbc dao = context.getBean("userDao", UserDaoJdbc.class);
 
         // Dao 사용코드
         User user = new User();
