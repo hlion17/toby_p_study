@@ -16,26 +16,27 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'net.sourceforge.javydreamercsw:H2-Driver:0.1'
     implementation 'junit:junit:4.13.1'
+    implementation 'org.chiknrice:concordion-spring-runner:1.0.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-
-    // https://mvnrepository.com/artifact/mysql/mysql-connector-java
-    implementation group: 'mysql', name: 'mysql-connector-java', version: '8.0.25'
 
     // https://mvnrepository.com/artifact/com.h2database/h2
     testImplementation group: 'com.h2database', name: 'h2', version: '1.4.200'
 
     // https://mvnrepository.com/artifact/org.springframework/spring-jdbc
-    implementation group: 'org.springframework', name: 'spring-jdbc', version: '3.0.7.RELEASE'
+//    implementation group: 'org.springframework', name: 'spring-jdbc', version: '3.0.7.RELEASE'
+
+    // https://mvnrepository.com/artifact/org.springframework/spring-jdbc
+    implementation group: 'org.springframework', name: 'spring-jdbc', version: '5.3.15'
+
 
     // https://mvnrepository.com/artifact/junit/junit
     testImplementation group: 'junit', name: 'junit', version: '4.7'
 
     // https://mvnrepository.com/artifact/org.springframework/spring-test
-    testImplementation group: 'org.springframework', name: 'spring-test', version: '3.0.7.RELEASE'
+//    testImplementation group: 'org.springframework', name: 'spring-test', version: '3.0.7.RELEASE'
 
-
-
-
+    // https://mvnrepository.com/artifact/org.springframework/spring-test
+    testImplementation group: 'org.springframework', name: 'spring-test', version: '5.3.15'
 
 
 }
