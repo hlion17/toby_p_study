@@ -27,5 +27,10 @@
     <!--UserService 빈 등록, UserDao DI 주입-->
     <bean id="userService" class="springbook.user.service.UserService">
         <property name="userDao" ref="userDao"/>
+        <property name="userLevelUpgradePolicy" ref="userLevelUpgradePolicy"/>
+    </bean>
+
+    <bean id="userLevelUpgradePolicy" class="springbook.user.policy.UserLevelUpgradePolicyImpl">
+        <property name="userDao" ref="userDao"/>
     </bean>
 </beans>
