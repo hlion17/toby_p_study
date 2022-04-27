@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "/test_applicationContext.xml")
@@ -66,37 +67,23 @@ public class UserServiceTest {
         UserServiceImpl userServiceImpl = new UserServiceImpl();
         UserLevelUpgradePolicyImpl userLevelUpgradePolicy = new UserLevelUpgradePolicyImpl();
 
-        // 목 오브젝트로 만든 UserDao 를 직접 DI 해준다.
-        MockUserDao mockUserDao = new MockUserDao(this.users);
+        // 다이내믹한 목 오브젝트 생성과 메소드의 리턴 값 설정
+        // , 그리고 DI까지 세 줄이면 충분하다.
+        UserDao mockUserDao = mock(UserDao.class);
+        when(mockUserDao.getAll()).thenReturn(this.users);
         userServiceImpl.setUserDao(mockUserDao);
+
         userServiceImpl.setUserLevelUpgradePolicy(userLevelUpgradePolicy);
         userLevelUpgradePolicy.setUserDao(mockUserDao);
 
-        // Given
-//        userDao.deleteAll();
-//        for (User user : users) {
-//            userDao.add(user);
-//        }
-
         userServiceImpl.upgradeLevels();
 
-        // MockUserDao 로부터 업데이트 결과를 가져온다.
-        List<User> updated = mockUserDao.getUpdated();
-        assertEquals(2, updated.size());
-        // 업데이트 횟수와 정보를 확인한다.
-        checkUserAndLevel(updated.get(0), "joytouch", Level.SILVER);
-        checkUserAndLevel(updated.get(1), "madnite1", Level.GOLD);
-
-
-        // When
-//        userService.upgradeLevels();
-
-        // Then
-//        checkLevel(users.get(0), false);
-//        checkLevel(users.get(1), true);
-//        checkLevel(users.get(2), false);
-//        checkLevel(users.get(3), true);
-//        checkLevel(users.get(4), false);
+        verify(mockUserDao, times(2)).update(any(User.class));
+        verify(mockUserDao, times(2)).update(any(User.class));
+        verify(mockUserDao).update(users.get(1));
+        assertEquals(Level.SILVER, users.get(1).getLevel());
+        verify(mockUserDao).update(users.get(3));
+        assertEquals(Level.GOLD, users.get(3).getLevel());
     }
 
 
@@ -194,45 +181,45 @@ public class UserServiceTest {
     static class TestUserLevelUpgradePolicyException extends RuntimeException {}
 
     // upgradeLevels() 메소드 고립 테스트를 위한 UserDao 목오브젝트
-    static class MockUserDao implements UserDao {
-        // 레벨 업그레이드 후보 User 오브젝트 목록
-        private List<User> users;
-        // 업그레이드 대상 오브젝트를 저장해 둘 목록
-        private List<User> updated = new ArrayList<>();
-
-        private MockUserDao(List<User> users) {
-            this.users = users;
-        }
-
-        public List<User> getUpdated() {
-            return updated;
-        }
-
-
-        @Override
-        public List<User> getAll() {
-            return this.users;
-        }
-
-        @Override
-        public void update(User user) {
-            updated.add(user);
-        }
-
-        @Override
-        public void add(User user) { throw new UnsupportedOperationException(); }
-        @Override
-        public User get(String id) { throw new UnsupportedOperationException(); }
-        @Override
-        public void deleteAll() { throw new UnsupportedOperationException(); }
-        @Override
-        public int getCount() { throw new UnsupportedOperationException(); }
-    }
-
-    // id와 level을 확인하는 간단한 헬퍼 메서드
-    private void checkUserAndLevel(User updated, String expectedId, Level expectedLevel) {
-        assertEquals(expectedId, updated.getId());
-        assertEquals(expectedLevel, updated.getLevel());
-    }
+//    static class MockUserDao implements UserDao {
+//        // 레벨 업그레이드 후보 User 오브젝트 목록
+//        private List<User> users;
+//        // 업그레이드 대상 오브젝트를 저장해 둘 목록
+//        private List<User> updated = new ArrayList<>();
+//
+//        private MockUserDao(List<User> users) {
+//            this.users = users;
+//        }
+//
+//        public List<User> getUpdated() {
+//            return updated;
+//        }
+//
+//
+//        @Override
+//        public List<User> getAll() {
+//            return this.users;
+//        }
+//
+//        @Override
+//        public void update(User user) {
+//            updated.add(user);
+//        }
+//
+//        @Override
+//        public void add(User user) { throw new UnsupportedOperationException(); }
+//        @Override
+//        public User get(String id) { throw new UnsupportedOperationException(); }
+//        @Override
+//        public void deleteAll() { throw new UnsupportedOperationException(); }
+//        @Override
+//        public int getCount() { throw new UnsupportedOperationException(); }
+//    }
+//
+//    // id와 level을 확인하는 간단한 헬퍼 메서드
+//    private void checkUserAndLevel(User updated, String expectedId, Level expectedLevel) {
+//        assertEquals(expectedId, updated.getId());
+//        assertEquals(expectedLevel, updated.getLevel());
+//    }
 
 }
