@@ -30,9 +30,16 @@
         <property name="userLevelUpgradePolicy" ref="userLevelUpgradePolicy"/>
     </bean>
 
-    <bean id="userService" class="springbook.user.service.UserServiceTx">
-        <property name="transactionManager" ref="transactionManager"/>
-        <property name="userService" ref="userServiceImpl"/>
+<!--    <bean id="userService" class="springbook.user.service.UserServiceTx">-->
+<!--        <property name="transactionManager" ref="transactionManager"/>-->
+<!--        <property name="userService" ref="userServiceImpl"/>-->
+<!--    </bean>-->
+
+    <bean id="userService" class="springbook.factorybean.TxProxyFactoryBean">
+        <property name="transactionManager" ref="transactionManager" />
+        <property name="pattern" value="upgradeLevels" />
+        <property name="target" ref="userServiceImpl" />
+        <property name="serviceInterface" value="springbook.user.service.UserService" />
     </bean>
 
     <bean id="userLevelUpgradePolicy" class="springbook.user.policy.UserLevelUpgradePolicyImpl">
@@ -41,5 +48,9 @@
 
     <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
         <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <bean id="message" class="springbook.factorybean.MessageFactoryBean">
+        <property name="text" value="Factory Bean" />
     </bean>
 </beans>

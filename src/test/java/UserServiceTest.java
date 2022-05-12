@@ -3,9 +3,13 @@ import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
+import springbook.factorybean.TxProxyFactoryBean;
+import springbook.proxyclass.TransactionHandler;
 import springbook.user.dao.UserDao;
 import springbook.user.domain.Level;
 import springbook.user.domain.User;
@@ -15,6 +19,7 @@ import springbook.user.service.UserServiceImpl;
 import springbook.user.service.UserServiceTx;
 
 import javax.sql.DataSource;
+import java.lang.reflect.Proxy;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +33,11 @@ import static org.mockito.Mockito.*;
 public class UserServiceTest {
     @Autowired
     UserService userService;
+
+    // 팩토리 빈을 가져오려면 애플리케이션 컨텍스트가 필요하다.
+    @Autowired
+    ApplicationContext context;
+
     @Autowired
     UserServiceImpl userServiceImpl;
     List<User> users;
@@ -86,8 +96,6 @@ public class UserServiceTest {
         assertEquals(Level.GOLD, users.get(3).getLevel());
     }
 
-
-
     // 처음 가입하는 사용자의 기본 Level 이 BASIC 인지 테스트
     @Test
     public void add() {
@@ -126,20 +134,26 @@ public class UserServiceTest {
     }
 
     @Test
-    public void upgradeAllOrNoting() {
+    // 다이내믹 프록시 팩토리 빈을 직접 만들어 사용할 떄는
+    // 없엤다가 다시 등장한 컨텍스트 무효화 애노테이션
+    @DirtiesContext
+    public void upgradeAllOrNoting() throws Exception {
         // 예외를 발생시킬 네 번째 사용자의 id를 넣어서 테스트용 UserServiceImpl 대역 오브젝트를 생성한다.
         TestUserLevelUpgradePolicy testUserLevelUpgradePolicy = new TestUserLevelUpgradePolicy(users.get(3).getId());
         // UserDao 수동 DI
         testUserLevelUpgradePolicy.setUserDao(this.userDao);
 
-        UserServiceTx txUserService = new UserServiceTx();
         UserServiceImpl userService = new UserServiceImpl();
 
         userService.setUserLevelUpgradePolicy(testUserLevelUpgradePolicy);
         userService.setUserDao(this.userDao);
 
-        txUserService.setTransactionManager(this.transactionManager);
-        txUserService.setUserService(userService);
+        TxProxyFactoryBean txProxyFactoryBean =
+                // 팩토리 빈 자체를 가져와야 하므로 빈 이름에 &을 반드시 넣어야 한다.
+                context.getBean("&userService", TxProxyFactoryBean.class);  // 테스트용 타깃 주입
+        txProxyFactoryBean.setTarget(userService);
+        // 변경된 타깃 설정을 이용해서 트랙잭션 다이내믹 프록시 오브젝트를 다시 생성한다.
+        UserService txUserService = (UserService) txProxyFactoryBean.getObject();
 
         userDao.deleteAll();
         for (User user : users) userDao.add(user);
