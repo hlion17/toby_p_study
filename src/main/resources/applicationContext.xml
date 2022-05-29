@@ -52,4 +52,17 @@
         <property name="text" value="Factory Bean" />
     </bean>
 
+    <bean id="coreDao" class="complex.module.CoreDaoImpl"></bean>
+
+    <bean id="coreServiceTarget" class="complex.module.CoreServiceImpl">
+        <property name="coreDao" ref="coreDao" />
+    </bean>
+
+    <bean id="coreService" class="springbook.factorybean.TxProxyFactoryBean">
+        <property name="target" ref="coreServiceTarget" />
+        <property name="pattern" value="" />
+        <property name="transactionManager" ref="transactionManager"/>
+        <property name="serviceInterface" value="complex.module.CoreService"/>
+    </bean>
+
 </beans>
